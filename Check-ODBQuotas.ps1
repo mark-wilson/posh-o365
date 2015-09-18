@@ -43,7 +43,7 @@ function loadModule($Name)
 } #End function loadModule 
 
 # Initialise variables
-$Syntax = "SYNTAX: Check-ODBQuotas CSVFile TenantName"
+$Syntax = "SYNTAX: Check-ODBQuotas CSVFile StorageQuota TenantName"
 $UpnList = @()
 $ProductName = "OneDrive for Business"
 $MinQuotaMb = 1024
@@ -103,7 +103,7 @@ If($Tenant)
 Else
 {
   Write-Host -NoNewLine "x" -BackgroundColor "Red" -ForegroundColor "White"
-  Write-Host " Tenant name is missing. For an Office 365 domain name @risual.onmicrosoft.com the tenant name would be risual."
+  Write-Host " Tenant name is missing. For an Office 365 domain name @markwilson.onmicrosoft.com the tenant name would be markwilson."
   $ErrorCode = 4
 }
 
