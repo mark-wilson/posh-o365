@@ -1,13 +1,16 @@
 ﻿Param(
-    [String]$Filename,
+    [String]$FileName,
     [String]$Tenant
   )
 
 ################################################################################
 # Set-O365Licences.ps1
-# Takes two parameters (CSV file containing a list of UPNs and subscription, Tenant name) and applies the appropriate licence
+# Takes two parameters (CSV file containing a list of UPNs/subscriptions/locations, Tenant name) and applies the appropriate licence
 # Requires the Microsoft Online Services module to be available on the system
 # Also requires credentials to access the tenant
+#
+# Known issues: Error-checking on licence allocation is not working correctly (will say that licence is added even if command fails)
+#
 ################################################################################
 
 function loadModule($Name)
@@ -42,35 +45,45 @@ function loadModule($Name)
 } #End function loadModule 
 
 # Initialise variables
-$Syntax = "SYNTAX: Set-O365Licences CSVFile TenantName"
-$UserList = @()
-$ErrorCode = 0
-$Url = ""
-$MSOLServiceUrl = "https://tenant.onmicrosoft.com"
-$O365Creds = ""
-$Result = ""
-$AccountSku = ""
-$Username = ""
-$Licence = ""
-$UserLicenceTest = ""
+$Syntax = "SYNTAX: Set-O365Licences CSVFile TenantName" # Syntax for this script
+$UserList = @()                                         # Array used when reading list of users from $FileName
+$ErrorCode = 0                                          # Used for error handling
+#$Url = ""                                               
+$MSOLServiceUrl = "https://tenant.onmicrosoft.com"      # URL format for Microsoft Online Services (MSOL) tenants
+$O365Creds = ""                                         # Used to store credentials for connection to MSOL
+$Result = ""                                            # Used for error handling
+$AccountSku = ""                                        # MSOL Account
+$AccountSkuID = ""                                      # MSOL Account SKU - e.g. <tenant>:ENTERPRISEPACK
+$AccountName = ""                                       # Account name, as recorded in the MSOL subscription
+$UserName = ""                                          # User name currently being acted on (read from UPN in $FileName)
+$Licence = ""                                           # Licence for $UserName (read from $FileName)
+$Location = ""                                          # Usage Location for $UserName (read from $FileName)
+$LicenceDetails = ""                                    # Licence information read from MSOL
+$ServicePlanList = @()                                  # Array for list of service plans in a subscription - not currently used
+$Index = 0                                              # Index for looping
+$E3 = ":ENTERPRISEPACK"                                 # Identifier used by MSOL for E3
+$E1 = ":STANDARDPACK"                                   # Identifier used by MSOL for E1
+$Sku = ""                                               # Used for comparison of requested licence type with current licence
 
 Write-Host $Syntax "`n" -BackgroundColor "White" -ForegroundColor "DarkBlue"
 Write-Host "Validating input:"
-Write-Host "  Opening $Filename and reading data"
 
-$UserList = Import-CSV $Filename
+# Read information from file
+Write-Host "  Opening $FileName and reading data"
+
+$UserList = Import-CSV $FileName
 
 If($UserList[0] -eq $null)
 { 
   Write-Host -NoNewLine "x" -BackgroundColor "Red" -ForegroundColor "White"
-  Write-Host " Error reading $Filename."
+  Write-Host " Error reading $FileName."
   $ErrorCode = 1
   Throw "Set-O365Licences There was a problem. Error code $ErrorCode."
 }
 Else
 { 
   Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
-  Write-Host " Imported" $UserList.Count "UPNs from $Filename."
+  Write-Host " Imported" $UserList.Count "UPNs from $FileName."
 }
 
 # Check that a tenant name was provided
@@ -87,7 +100,7 @@ Else
   $ErrorCode = 4
 }
 
-# Load the Microsoft Online Services  module
+# Load the Microsoft Online Services module
 If(LoadModule -name MSOnline)
 {
   Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
@@ -130,40 +143,171 @@ Else
   Write-Host " Connected to $MSOLServiceURL."
 }
 
+# Read account details
 $AccountSku = Get-MsolAccountSku
+$AccountName = $AccountSku.AccountName
 
+# List subscription details
 Write-Host "  This tenant has" $AccountSku.Count "subscription(s):"
-
-#$AccountSku | fl
-
 ForEach ($Subscription in $AccountSku)
 {
-  Write-Host "  -" $AccountSku.AccountSkuID "has used" $AccountSku.ActiveUnits "out of" $AccountSku.ConsumedUnits "licences."
+  Write-Host "  -" $AccountSku.AccountSkuID "has used" $AccountSku.ConsumedUnits "out of" $AccountSku.ActiveUnits "licences."
 }
 
+# Process each user in turn
 ForEach ($User in $UserList)
 {
-  $Username = $User.UPN
+  $UserName = $User.UPN
+  Write-Host "  Processing $UserName."
 
-  Write-Host "  Processing $Username."
-  $UserLicenceTest = Get-MsolUser -UserPrincipalName $Username
-  If($UserLicenceTest.IsLicensed)
+  # Check if they have a licence
+  $LicenceDetails = (Get-MsolUser -UserPrincipalName $UserName).Licenses
+
+  # If there's a license, show the details.
+  If ($LicenceDetails.Count -gt 0)
   {
-    Write-Host "  -" $UserLicenceTest.Licenses.Count "licences."
-    ForEach ($Licence in $UserLicenceTest)
-    {
-      Write-Host "  -" $UserLicenceTest.Licenses[$Licence].ServiceStatus
-    }
+    $AccountSkuID = $LicenceDetails.AccountSkuID
+    Write-Host "  - The following licences are currently allocated:"
+    Write-Host "    -" $AccountSkuID # "with the following service plans:"
+#    ForEach ($Item in $LicenceDetails)
+#    {
+#      $ServicePlanList = $Item.ServiceStatus #List of services
+#      
+#      For($Index=0; $Index -lt $ServicePlanList.Count; $Index++)
+#      {
+#         Write-Host "      - " -NoNewline
+#         $ServicePlanList[$Index]
+#      }
+#    }
+  }
+  Else
+  {
+    Write-Host "  - No licences currently allocated."
+    $AccountSkuID = "None"
   }
 
   $Licence = $User.Licence
+  $Location = $User.Location
 
-  # Calculate the Licence to be allocated
-  Switch($Licence)
+  # Calculate any licencing changes
+  Switch($Licence) # None, E1 or E3
   {
-    "None" {"  - $Username does not require a licence to be allocated."}
-    "E1" {"  - $Username requires an $Licence licence."}
-    "E3" {"  - $Username requires an $Licence licence."}
-    default {"  - Could not determine the licence requirements for $Username."}
+    "None"
+    {
+      $Sku = "None"
+      Write-Host "  - No licence is required."
+#      Write-Host "  - Existing = $AccountSkuID ; New = $Sku"
+      If ($AccountSkuID -eq $Sku)
+      {
+        Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
+        Write-Host " - No changes required."
+      }
+      Else
+      {
+        Write-Host "  - Attempting to remove any existing licence."
+        $Result = Set-MsolUserLicense -UserPrincipalName $UserName -RemoveLicenses $AccountSkuID
+        If($Result -ne $null)
+        { 
+          Write-Host -NoNewLine "x" -BackgroundColor "Red" -ForegroundColor "White"
+          Write-Host " Error removing existing licence."
+          $ErrorCode = 8
+          Throw "Set-O365Licences There was a problem. Error code $ErrorCode."
+        }
+        Else
+        { 
+          Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
+          Write-Host "   - Licence removed."
+        }
+      }
+    }
+    "E1"
+    {
+      $Sku = $AccountName + $E1
+      Write-Host "  - $Licence licence for $Location has been requested."
+#      Write-Host "  - Existing = $AccountSkuID ; New = $Sku"
+      If ($AccountSkuID -eq $Sku)
+      {
+        Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
+        Write-Host " - No changes required. No action taken for this user."
+      }
+      Else
+      {
+        Write-Host "  - Setting usage location to $Location."
+        $Result = Set-MsolUser -UserPrincipalName $UserName -UsageLocation $Location
+        If($Result -ne $null)
+        { 
+          Write-Host -NoNewLine "x" -BackgroundColor "Red" -ForegroundColor "White"
+          Write-Host "   - Error setting usage location."
+          $ErrorCode = 7
+          Throw "Set-O365Licences There was a problem. Error code $ErrorCode."
+        }
+        Else
+        { 
+          Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
+          Write-Host "   - Usage location set."
+        }
+        Write-Host "  - Assigning $Sku licence."
+        $Result = Set-MsolUserLicense -UserPrincipalName $UserName -AddLicenses $Sku
+        If($Result -ne $null)
+        { 
+          Write-Host -NoNewLine "x" -BackgroundColor "Red" -ForegroundColor "White"
+          Write-Host "   - Error adding licence."
+          $ErrorCode = 8
+          Throw "Set-O365Licences There was a problem. Error code $ErrorCode."
+        }
+        Else
+        { 
+          Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
+          Write-Host "   - Licence added."
+        }
+      }
+    }
+    "E3"
+    {
+      $Sku = $AccountName + $E3
+      Write-Host "  - $Licence licence for $Location has been requested."
+#      Write-Host "  - Existing = $AccountSkuID ; New = $Sku"
+      If ($AccountSkuID -eq $Sku)
+      {
+        Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
+        Write-Host " - No changes required. No action taken for this user."
+      }
+      Else
+      {
+        Write-Host "  - Setting Usage Location to $Location."
+        $Result = Set-MsolUser -UserPrincipalName $UserName -UsageLocation $Location
+        If($Result -ne $null)
+        { 
+          Write-Host -NoNewLine "x" -BackgroundColor "Red" -ForegroundColor "White"
+          Write-Host "   - Error setting usage location."
+          $ErrorCode = 7
+          Throw "Set-O365Licences There was a problem. Error code $ErrorCode."
+        }
+        Else
+        { 
+          Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
+          Write-Host "   - Usage location set."
+        }
+        Write-Host "  - Assigning $Sku licence."
+        $Result = Set-MsolUserLicense -UserPrincipalName $UserName -AddLicenses $Sku
+        If($Result -ne $null)
+        { 
+          Write-Host -NoNewLine "x" -BackgroundColor "Red" -ForegroundColor "White"
+          Write-Host "   - Error adding licence."
+          $ErrorCode = 8
+          Throw "Set-O365Licences There was a problem. Error code $ErrorCode."
+        }
+        Else
+        { 
+          Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
+          Write-Host "   - Licence added."
+        }
+      }
+    }
+    default # Not recognised
+    {
+      Write-Host -NoNewLine "~" -BackgroundColor "Yellow" -ForegroundColor "Black"
+      Write-Host " - Could not determine the licence requirements for $UserName. No action taken for this user."
+    }
   }
 }
