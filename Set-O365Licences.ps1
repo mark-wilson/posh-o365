@@ -48,13 +48,13 @@ function loadModule($Name)
 $Syntax = "SYNTAX: Set-O365Licences CSVFile TenantName" # Syntax for this script
 $UserList = @()                                         # Array used when reading list of users from $FileName
 $ErrorCode = 0                                          # Used for error handling
-#$Url = ""                                               
 $MSOLServiceUrl = "https://tenant.onmicrosoft.com"      # URL format for Microsoft Online Services (MSOL) tenants
 $O365Creds = ""                                         # Used to store credentials for connection to MSOL
 $Result = ""                                            # Used for error handling
-$AccountSku = ""                                        # MSOL Account
+$AccountSku = @()                                       # MSOL Account
 $AccountSkuID = ""                                      # MSOL Account SKU - e.g. <tenant>:ENTERPRISEPACK
 $AccountName = ""                                       # Account name, as recorded in the MSOL subscription
+$Subscription = ""                                      # Subscription, as recorded against the $MSOLAccount
 $UserName = ""                                          # User name currently being acted on (read from UPN in $FileName)
 $Licence = ""                                           # Licence for $UserName (read from $FileName)
 $Location = ""                                          # Usage Location for $UserName (read from $FileName)
@@ -145,13 +145,16 @@ Else
 
 # Read account details
 $AccountSku = Get-MsolAccountSku
-$AccountName = $AccountSku.AccountName
+$AccountName = $AccountSku[0].AccountName # $AccountSku is an array, but this entry should be the same for all subscriptions.
 
 # List subscription details
 Write-Host "  This tenant has" $AccountSku.Count "subscription(s):"
+
+$Index = 0
 ForEach ($Subscription in $AccountSku)
 {
-  Write-Host "  -" $AccountSku.AccountSkuID "has used" $AccountSku.ConsumedUnits "out of" $AccountSku.ActiveUnits "licences."
+  Write-Host "  -" $AccountSku[$Index].AccountSkuID "has used" $AccountSku[$Index].ConsumedUnits "out of" $AccountSku[$Index].ActiveUnits "licences."
+  $Index++
 }
 
 # Process each user in turn
