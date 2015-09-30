@@ -199,7 +199,7 @@ $Result = Import-PSSession $SfBOSession
 # Connect to Exchange Online
 Write-Host "  Attempting to connect to Exchange Online..."
 $ExchangeSession = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri "https://outlook.office365.com/powershell-liveid/" -Credential $O365Creds -Authentication "Basic" -AllowRedirection
-$Result = $ExchangeSession
+$Result = Import-PSSession $ExchangeSession -DisableNameChecking
 
 #If($Result -ne $null)
 #{ 
