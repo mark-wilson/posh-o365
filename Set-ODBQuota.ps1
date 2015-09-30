@@ -86,7 +86,7 @@ Else
 If($Upn -match "\.")
 {
   Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
-  Write-Host " $Upn contains \."
+  Write-Host " $Upn contains a dot (.)."
 }
 Else
 {
