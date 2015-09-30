@@ -3,12 +3,16 @@
   )
 
 ################################################################################
-# Connect-O365.ps1
-# Takes one parameter (Tenant name) and connects to all Office 365 services
-# Requires management modules to be available on the system used to run the script
-# Also requires credentials to access the tenant
-#
-# Based on https://technet.microsoft.com/en-gb/library/dn568015.aspx
+# Connect-O365.ps1                                                             #
+# Takes one parameter (Tenant name) and connects to all Office 365 services    #
+#                                                                              #
+# Requires management modules for Azure AD, SharePoint Online, Skype for       #
+# Business Online and Exchange Online to be available on the system used to    #
+# run the script                                                               #
+#                                                                              #
+# Also requires credentials to access the tenant                               #
+#                                                                              #
+# Based on https://technet.microsoft.com/en-gb/library/dn568015.aspx           #
 ################################################################################
 
 function loadModule($Name)
@@ -137,20 +141,20 @@ Write-Host "`nIntended action: Connecting to $Tenant.onmicrosoft.com:"
 
 # Connect to Microsoft Online
 Write-Host "  Attempting to connect to Microsoft Online..."
-$Result = Connect-MolService –url $SPOServiceURL –credential $O365Creds
+$Result = Connect-MsolService -Credential $O365Creds
 
-If($Result -ne $null)
-{ 
-  Write-Host -NoNewLine "x" -BackgroundColor "Red" -ForegroundColor "White"
-  Write-Host " Error connecting to $SPOServiceURL."
-  $ErrorCode = 6
-  Throw "Connect-O365 There was a problem. Error code $ErrorCode."
-}
-Else
-{ 
-  Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
-  Write-Host " Connected to SharePoint Online."
-}
+#If($Result -ne $null)
+#{ 
+#  Write-Host -NoNewLine "x" -BackgroundColor "Red" -ForegroundColor "White"
+#  Write-Host " Error connecting to Microsoft Online."
+#  $ErrorCode = 6
+#  Throw "Connect-O365 There was a problem. Error code $ErrorCode."
+#}
+#Else
+#{ 
+#  Write-Host -NoNewLine " " -BackgroundColor "Green" -ForegroundColor "White"
+#  Write-Host " Connected to Microsoft Online."
+#}
 
 # Calculate the URLs for connection to SharePoint Online
 $SPOServiceUrl = $SPOServiceUrl -replace "tenant",$Tenant
@@ -230,4 +234,4 @@ $Result = Import-PSSession $CCSession -Prefix cc
 
 Write-Host "  PowerShell sessions created. Current sessions are:"
 Get-PSSession
-Write-Host "`n  Remember to close sessions gracefully with Remove-PSSession. Alternatively close all sessions with `nGet-PSSession | Remove-PSSession."
+Write-Host "`n  Remember to close sessions gracefully with Remove-PSSession. Alternatively close all sessions with `n  Get-PSSession | Remove-PSSession."
