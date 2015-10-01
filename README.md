@@ -2,7 +2,7 @@
 PowerShell scripts for management of Office 365
 
 Author: Mark Wilson
-Readme last updated 16 September 2015
+Readme last updated 1 October 2015
 
 posh-o365 is a collection of scripts I've used for managing Office 365. They may not be the "best" PowerShell in the world, but they worked for me, and my hope is that by open-sourcing them, others will improve and add to the collection.
 
@@ -21,6 +21,16 @@ Tenant is the tenant name.
 Connect-O365.ps1 tenant
 
 Tenant is the tenant name.
+
+* Match-ExchangeGuids.ps1 is used to take a CSV file of UPNs and ExchangeGuids (extracted from Get-Mailbox on premises) and compare these to the Azure AD entries prior to migration. The script runs an analysis phase and optionally makes the necessary changes, creating a log file for reference.
+
+Match-ExchangeGuids.ps1 filename tenant
+
+Filename should be in CSV format, with the following headings: Upn,msExchMailboxGuid.
+
+Tenant is the tenant name.
+
+I'm aware that the basic function of this script could be done in 2 lines of PowerShell but I wanted to be able to refer to the changes made in case there are problems later (it shouldn't really be necessary to change Exchange GUIDs).
 
 * Set-O365Licences.ps1 is used to examine a list of users, licences and locations before assigning licences according. The script takes two parameters:
 
