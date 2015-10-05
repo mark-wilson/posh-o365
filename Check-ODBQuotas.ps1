@@ -5,10 +5,16 @@
   )
 
 ################################################################################
-# Check-ODBQuotas.ps1
-# Takes three parameters (CSV file containing a list of UPNs, Storage Quota, Tenant name) and checks the specified users' OneDrive for Business storage quotas
-# Requires the SharePoint Online Management module to be available on the system
-# Also requires credentials to access the tenant
+# Check-ODBQuotas.ps1                                                          #
+#                                                                              #
+# Takes three parameters (CSV file containing a list of UPNs, Storage Quota,   #
+# Tenant name) and checks the specified users' OneDrive for Business storage   #
+# quotas                                                                       #
+#                                                                              #
+# Requires the SharePoint Online Management module to be available on the      #
+# system                                                                       #
+#                                                                              #
+# Also requires credentials to access the tenant                               #
 ################################################################################
 
 function loadModule($Name)

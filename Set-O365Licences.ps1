@@ -4,15 +4,20 @@
   )
 
 ################################################################################
-# Set-O365Licences.ps1
-# Takes two parameters (CSV file containing a list of UPNs/subscriptions/locations, Tenant name) and applies the appropriate licence
-# Requires the Microsoft Online Services module to be available on the system
-# Also requires credentials to access the tenant
-#
-# Known issues: Error-checking on licence allocation is not working correctly (will say that licence is added even if command fails)
-#
-# Notes: Script draws heavily on advice at http://windowsitpro.com/office-365/office-365-licensing-windows-powershell
-#
+# Set-O365Licences.ps1                                                         #
+#                                                                              #
+# Takes two parameters (CSV file containing a list of UPNs/subscriptions/      #
+# locations, Tenant name) and applies the appropriate licence                  #
+# Requires the Microsoft Online Services module to be available on the system  #
+#                                                                              #
+# Also requires credentials to access the tenant                               #
+#                                                                              #
+# Known issues: Error-checking on licence allocation is not working correctly  #
+# (will say that licence is added even if command fails)                       #
+#                                                                              #
+# Notes: Script draws heavily on advice at http://windowsitpro.com/office-365/ #
+# office-365-licensing-windows-powershell                                      #
+#                                                                              #
 ################################################################################
 
 function loadModule($Name)

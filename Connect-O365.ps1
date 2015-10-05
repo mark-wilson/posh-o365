@@ -4,6 +4,7 @@
 
 ################################################################################
 # Connect-O365.ps1                                                             #
+#                                                                              #
 # Takes one parameter (Tenant name) and connects to all Office 365 services    #
 #                                                                              #
 # Requires management modules for Azure AD, SharePoint Online, Skype for       #

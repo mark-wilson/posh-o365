@@ -5,10 +5,15 @@
   )
 
 ################################################################################
-# Set-ODBQuota.ps1
-# Takes three parameters (UPN, Storage Quota, Tenant name) and sets the specified user's OneDrive for Business storage quota
-# Requires the SharePoint Online Management module to be available on the system used to run the script
-# Also requires credentials to access the tenant
+# Set-ODBQuota.ps1                                                             #
+#                                                                              #
+# Takes three parameters (UPN, Storage Quota, Tenant name) and sets the        #
+# specified user's OneDrive for Business storage quota                         #
+#                                                                              #
+# Requires the SharePoint Online Management module to be available on the      #
+# system used to run the script                                                #
+#                                                                              #
+# Also requires credentials to access the tenant                               #
 ################################################################################
 
 function isEmailAddress($Object)
